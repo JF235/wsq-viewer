@@ -74,6 +74,17 @@ const tests: [string, () => Promise<void>][] = [
     assert(input instanceof vscode.TabInputCustom && input.viewType === VIEW_TYPE, `active tab is ${describeInput(input)}`);
   }],
 
+  ['.wsq files get the WSQ language and its icon', async () => {
+    const languages = await vscode.languages.getLanguages();
+    assert(languages.includes('wsq'), 'no wsq language registered');
+    const ext = vscode.extensions.getExtension('jf235.wsq-viewer')!;
+    const icon = ext.packageJSON.contributes.languages[0].icon;
+    for (const theme of ['light', 'dark']) {
+      const svg = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.joinPath(ext.extensionUri, icon[theme])));
+      assert(svg.startsWith('<svg') && svg.includes('clip-path'), `${theme} file icon is not the expected SVG`);
+    }
+  }],
+
   ['the file name match ignores case', async () => {
     const s = await openRendered('UPPER.WSQ');
     assert(s.width === 64 && s.height === 48, `size ${s.width}x${s.height}`);

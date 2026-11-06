@@ -9,3 +9,5 @@
 !dist/wasm/*.wasm
 !media/preview.js
 !media/preview.css
+!media/icon.png
+!media/wsq-file-*.svg

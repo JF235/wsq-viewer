@@ -9,6 +9,7 @@
     "type": "git",
     "url": "https://github.com/JF235/wsq-viewer"
   },
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.82.0"
   },
@@ -32,6 +33,22 @@
     }
   },
   "contributes": {
+    "languages": [
+      {
+        "id": "wsq",
+        "aliases": [
+          "WSQ Image",
+          "wsq"
+        ],
+        "extensions": [
+          ".wsq"
+        ],
+        "icon": {
+          "light": "./media/wsq-file-light.svg",
+          "dark": "./media/wsq-file-dark.svg"
+        }
+      }
+    ],
     "customEditors": [
       {
         "viewType": "wsqViewer.preview",

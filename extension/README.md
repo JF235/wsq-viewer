@@ -16,6 +16,7 @@ files open: click a `.wsq` file and the image appears.
   resolution is kept in the PNG file.
 - **Image information**: dimensions, resolution, bit rate, compression ratio, wavelet filters
   and every NISTCOM field (`WSQ: Show Image Information`).
+- **File icon** in the Explorer, in the style of the image icons of VS Code's default icon theme.
 - **Reloads** when the file changes on disk.
 - **Works everywhere VS Code does**: desktop, remote and vscode.dev, in restricted mode too.
 

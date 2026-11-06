@@ -7,7 +7,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JF235/wsq-viewer"
+    "url": "https://github.com/JF235/wsq-viewer",
+    "directory": "extension"
+  },
+  "homepage": "https://github.com/JF235/wsq-viewer#readme",
+  "bugs": {
+    "url": "https://github.com/JF235/wsq-viewer/issues"
   },
   "icon": "media/icon.png",
   "engines": {
@@ -175,7 +180,8 @@
     "test:web": "node scripts/build.mjs --tests && node test/integration/run.mjs",
     "test": "npm run typecheck && npm run test:unit && npm run test:web",
     "vscode:prepublish": "node scripts/build.mjs --production",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies --baseContentUrl https://github.com/JF235/wsq-viewer/blob/main/extension --baseImagesUrl https://github.com/JF235/wsq-viewer/raw/main/extension",
+    "publish": "vsce publish --no-dependencies --baseContentUrl https://github.com/JF235/wsq-viewer/blob/main/extension --baseImagesUrl https://github.com/JF235/wsq-viewer/raw/main/extension"
   },
   "devDependencies": {
     "@types/node": "22.20.3",

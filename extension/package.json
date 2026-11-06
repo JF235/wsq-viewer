@@ -1,0 +1,153 @@
+{
+  "name": "wsq-viewer",
+  "displayName": "WSQ Viewer",
+  "description": "Open WSQ fingerprint images like any other image: zoom, diffs, export to PNG. NBIS-exact decoder in WebAssembly, nothing to install.",
+  "version": "0.1.0",
+  "publisher": "jf235",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JF235/wsq-viewer"
+  },
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "wsq",
+    "fingerprint",
+    "biometrics",
+    "nist",
+    "image viewer"
+  ],
+  "main": "./dist/node/extension.js",
+  "browser": "./dist/web/extension.js",
+  "capabilities": {
+    "virtualWorkspaces": true,
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "wsqViewer.preview",
+        "displayName": "WSQ Image Preview",
+        "selector": [
+          {
+            "filenamePattern": "*.wsq"
+          }
+        ],
+        "priority": {
+          "textEditor": "default",
+          "diffEditor": "default"
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "wsqViewer.zoomIn",
+        "title": "Zoom In",
+        "category": "WSQ"
+      },
+      {
+        "command": "wsqViewer.zoomOut",
+        "title": "Zoom Out",
+        "category": "WSQ"
+      },
+      {
+        "command": "wsqViewer.selectZoomLevel",
+        "title": "Select Zoom Level",
+        "category": "WSQ"
+      },
+      {
+        "command": "wsqViewer.copyImage",
+        "title": "Copy Image",
+        "category": "WSQ"
+      },
+      {
+        "command": "wsqViewer.exportPng",
+        "title": "Export as PNG...",
+        "category": "WSQ"
+      },
+      {
+        "command": "wsqViewer.showInfo",
+        "title": "Show Image Information",
+        "category": "WSQ"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "wsqViewer.zoomIn",
+          "when": "activeCustomEditorId == 'wsqViewer.preview'"
+        },
+        {
+          "command": "wsqViewer.zoomOut",
+          "when": "activeCustomEditorId == 'wsqViewer.preview'"
+        },
+        {
+          "command": "wsqViewer.selectZoomLevel",
+          "when": "activeCustomEditorId == 'wsqViewer.preview'"
+        },
+        {
+          "command": "wsqViewer.copyImage",
+          "when": "false"
+        },
+        {
+          "command": "wsqViewer.exportPng",
+          "when": "activeCustomEditorId == 'wsqViewer.preview'"
+        },
+        {
+          "command": "wsqViewer.showInfo",
+          "when": "activeCustomEditorId == 'wsqViewer.preview'"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "wsqViewer.copyImage",
+          "when": "webviewId == 'wsqViewer.preview'",
+          "group": "1_copy"
+        },
+        {
+          "command": "wsqViewer.exportPng",
+          "when": "webviewId == 'wsqViewer.preview'",
+          "group": "2_export"
+        },
+        {
+          "command": "wsqViewer.showInfo",
+          "when": "webviewId == 'wsqViewer.preview'",
+          "group": "3_info"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "wsqViewer.exportPng",
+          "when": "resourceExtname =~ /^\\.wsq$/i",
+          "group": "7_modification"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p . --noEmit && tsc -p media",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/unit/*.test.ts\"",
+    "test:web": "node scripts/build.mjs --tests && node test/integration/run.mjs",
+    "test": "npm run typecheck && npm run test:unit && npm run test:web",
+    "vscode:prepublish": "node scripts/build.mjs --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.3",
+    "@types/vscode": "1.82.0",
+    "@vscode/test-web": "0.0.81",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}

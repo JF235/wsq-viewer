@@ -9,3 +9,9 @@ __pycache__/
 
 # Rust
 /target/
+
+# VS Code extension
+extension/node_modules/
+extension/dist/
+extension/.vscode-test-web/
+*.vsix

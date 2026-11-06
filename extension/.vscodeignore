@@ -1,0 +1,11 @@
+**
+!package.json
+!README.md
+!CHANGELOG.md
+!LICENSE
+!icon.png
+!dist/node/extension.js
+!dist/web/extension.js
+!dist/wasm/*.wasm
+!media/preview.js
+!media/preview.css

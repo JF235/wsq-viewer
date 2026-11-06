@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      # The NIST WSQ reference images (public, 56 MB) for the conformance tests; if they cannot be
+      # downloaded, those tests are skipped and the rest still runs.
+      - name: Cache the NIST reference images
+        id: nist
+        uses: actions/cache@v4
+        with:
+          path: nist
+          key: nist-wsq-reference-images-v2.0-pgm
+      - name: Download the NIST reference images
+        if: steps.nist.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p nist
+          if ! curl -fsSL --retry 3 https://nigos.nist.gov/wsq/reference_images_v2.0_pgm.tar | tar -x -C nist; then
+            rm -rf nist
+            echo "::warning::NIST reference images unavailable; the conformance tests are skipped"
+          fi
+      - name: Use the NIST reference images
+        run: |
+          if [ -d nist/reference_images_v2.0_pgm/decode ]; then
+            echo "WSQ_NIST_DIR=$PWD/nist/reference_images_v2.0_pgm" >> "$GITHUB_ENV"
+          fi
+
+      - name: Rust tests
+        run: cargo test --release --workspace
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Extension
+        working-directory: extension
+        run: |
+          npm ci
+          npm run build:wasm
+          npm run typecheck
+          npm run test:unit
+          npx playwright install --with-deps chromium
+          npm run test:web
+          npm run package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: extension/*.vsix

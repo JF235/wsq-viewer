@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn reader_matches_slow_path_on_long_data() {
-        let data: Vec<u8> = (0..1000u32).map(|i| ((i * 2654435761u32) >> 13) as u8).collect();
+        let data: Vec<u8> = (0..1000u32).map(|i| (i.wrapping_mul(2654435761) >> 13) as u8).collect();
         let mut r = BitReader::new(&data);
         let mut bitpos = 0usize;
         let widths = [1u32, 3, 7, 13, 16, 2, 9, 5, 11];

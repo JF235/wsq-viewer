@@ -4,3 +4,6 @@ docs/algorithm/build.log
 
 # Python
 __pycache__/
+
+# Rust
+/target/

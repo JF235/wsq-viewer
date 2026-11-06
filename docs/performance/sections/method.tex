@@ -1,0 +1,29 @@
+\section{How the measurements were made}
+\label{sec:method}
+
+\paragraph*{Machine.} \input{generated/machine} The processor has four performance cores
+(two threads each) and four efficiency cores; it has AVX2 and FMA but not AVX-512;
+Section~\ref{sec:server} repeats the single-core measurements on a server processor that has it.
+Single-thread measurements run pinned to one performance core (\code{taskset -c 2}); the
+multi-threaded ones use the performance cores, and the batch measurements all twelve hardware
+threads. The GPU is the laptop's NVIDIA GeForce RTX 3050 (6 GB).
+
+\paragraph*{Data.} The 40 images of the NIST WSQ reference data set version 2.0 (rolled prints,
+plain impressions and four-finger slaps, from 375$\times$526 to 1600$\times$1500 pixels). For
+decoding, the inputs are the streams NBIS writes for those images at 0.75 and at 2.25 bits per
+pixel, 80 files in all; the 86 files NIST distributes for decoder testing were used for the
+correctness checks but not for timing, because their Huffman tables make NBIS print a warning
+per table, which would add console output to its times.
+
+\paragraph*{Reference.} NBIS 5.0.0, compiled with its own build system (\code{gcc -O2}), timed
+in memory through \code{wsq\_decode\_mem} and \code{wsq\_encode\_mem} by a small C harness
+(\code{bench/nbis}). Our codec is timed in memory as well (\code{wsq bench}); file reading and
+writing are excluded on both sides.
+
+\paragraph*{Statistic.} Every time is the median of 9 runs (5 for encoding) after one warm-up
+run; the decoder and encoder reuse their buffers across runs, as a program decoding many images
+would. Per-stage times come from timestamps inside the codec.
+
+\paragraph*{What \emph{faster} means here.} The rows of Tables~\ref{tab:decode}
+and~\ref{tab:encode} add up the per-image medians over the 40 images of a set; speedups are
+ratios of those sums, so large images weigh more than small ones, as they do in practice.

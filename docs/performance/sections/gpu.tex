@@ -1,0 +1,51 @@
+\section{A GPU for batch decoding}
+\label{sec:gpu}
+
+Entropy decoding is sequential within a block, but the inverse transform is massively
+parallel, so a GPU could take it over while the CPU decodes the entropy-coded data of the next
+images. The test split the work that way:
+\begin{itemize}
+  \item the CPU parses, entropy-decodes and dequantizes (\code{Decoder::decode\_coefficients});
+  \item the GPU receives the coefficient array, runs the inverse transform (the specification's
+    formulas, one indexed gather and multiply-add per filter tap, fused into one kernel per pass
+    by \code{torch.compile}) and converts to pixels, for batches of images of the same size;
+  \item copies to and from the GPU overlap with computation (two CUDA streams, double buffers).
+\end{itemize}
+The GPU is the laptop's GeForce RTX 3050 (6~GB, 20 multiprocessors, PCIe~4 at about
+8.7~GB/s measured). Its results match the exact decoder within the Annex AA.3 tolerance
+(99.998\% of the pixels equal, none off by more than one) but not bit for bit.
+
+\begin{table}[ht]
+  \centering\small
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    images per second & \texttt{a002} (1452$\times$1006) & \texttt{cmp00001} (589$\times$605) \\
+    \midrule
+    CPU, full decode, 1 thread & 214 & 950 \\
+    CPU, full decode, 8 threads & 604 & 3\,689 \\
+    CPU, coefficients only, 4 threads & 1\,859 & 11\,181 \\
+    GPU, transform and pixels only (batch 16 / 32) & 850 & 3\,409 \\
+    GPU, upload of float32 coefficients alone & 1\,493 & 6\,100 \\
+    GPU, transform with copies, overlapped & 723 & 2\,993 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Batch decoding on the CPU and with the transform on the laptop GPU.}
+  \label{tab:gpu}
+\end{table}
+
+Table~\ref{tab:gpu} gives the answer for this machine: the GPU roughly matches the optimized CPU
+path. For large images it is 20\% faster (723 against 604 images per second); for smaller ones
+the CPU wins (3\,689 against 2\,993). The main value of the GPU here would be to leave the CPU
+free. Three limits stand out.
+\begin{itemize}
+  \item \emph{Memory bandwidth}: the gathers of the compiled passes reach 110~GB/s, close to what
+    the laptop GPU sustains on a plain copy (155~GB/s).
+  \item \emph{The bus}: float32 coefficients take 4 bytes per pixel, and uploading them alone
+    caps the rate at about 1\,500 images per second; sending the 16-bit quantizer indices and
+    dequantizing on the GPU would halve that.
+  \item \emph{The CPU part}: entropy decoding and dequantization reach about 1\,860 images of this
+    size per second on four cores, so a faster GPU would soon wait for the CPU.
+\end{itemize}
+A data-center GPU has 15 to 20 times the memory bandwidth of this one and a faster bus; on a
+server with many cores for the entropy decoding, offloading the transform should then pay
+clearly. That test (for instance on the H100 of the research group) is left for later.

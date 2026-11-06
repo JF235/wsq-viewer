@@ -1,0 +1,13 @@
+\section{Limitations and next steps}
+\label{sec:limitations}
+
+\begin{itemize}
+  \item \emph{ARM NEON} is not implemented; on ARM the scalar backend runs. AVX-512 was tested
+    on a single server processor.
+  \item \emph{The inverse transform} remains limited by data movement. Processing two tree levels
+    per pass, or (in fast mode) keeping intermediates in 16-bit floats, could reduce it.
+  \item \emph{Entropy decoding} is sequential within a block; streams with more than three blocks
+    are decoded on one thread.
+  \item \emph{Times} come from a laptop processor, whose frequency varies with temperature, and
+    from a shared server; medians of several runs reduce, but do not remove, that noise.
+\end{itemize}

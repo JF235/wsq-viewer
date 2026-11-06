@@ -1,0 +1,29 @@
+\section{Introduction}
+\label{sec:introduction}
+
+The \texttt{wsq-viewer} project needs a WSQ codec that runs inside Visual Studio Code, without
+Python or native dependencies, fast enough that opening a fingerprint feels instantaneous, and
+correct enough to be trusted for forensic images. The companion document \emph{The WSQ
+Fingerprint Image Compression Algorithm} describes the algorithm; this one describes how its
+implementation was made fast and how fast it is.
+
+The codec is a Rust library (\code{crates/wsq}) with a command-line tool and a WebAssembly
+build for the extension. It has two arithmetic contracts:
+\begin{description}[leftmargin=0pt]
+  \item[Exact mode] reproduces NBIS 5.0.0, the NIST reference implementation, bit for bit: the
+    decoder returns exactly the pixels of \code{dwsq}, and the encoder writes exactly the bytes of
+    \code{cwsq}, comment included.
+  \item[Fast mode] lets the arithmetic run in any order, with fused multiply-add and double
+    precision where cheaper, and stays within the compliance tolerances of the specification.
+\end{description}
+Both modes run on any of five instruction sets, selected at run time.
+
+Table~\ref{tab:summary} summarizes the outcome on a 1452$\times$1006 four-finger slap
+compressed at 0.75 bits per pixel, on one performance core of a 2022 laptop processor. The rest
+of the report explains how these numbers were obtained (Sections~\ref{sec:method}
+to~\ref{sec:optimizations}), presents the measurements on the whole NIST data set
+(Section~\ref{sec:results}), answers whether giving up exactness would buy more speed
+(Section~\ref{sec:relaxation}), and reports a test of batch decoding on a GPU
+(Section~\ref{sec:gpu}).
+
+\input{generated/summary}

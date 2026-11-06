@@ -1,0 +1,32 @@
+\section{Does giving up exactness pay?}
+\label{sec:relaxation}
+
+\input{generated/variance}
+
+The fast mode is free to reorder operations, fold symmetric filter taps (halving the
+multiplications), use fused multiply-add and compute in double precision where that is cheaper.
+Table~\ref{tab:relax} compares it with the exact mode stage by stage.
+
+\input{generated/relax}
+
+\paragraph*{Decoding: no.} With AVX2 the two modes take the same time to the percent. The
+transform is limited by data movement (Section~\ref{sec:optimizations}), so doing half the
+multiplications changes nothing; dequantization and pixel conversion are memory-bound as well.
+Only the scalar backend, which is compute-bound, gains (11\% over the 40 images,
+Table~\ref{tab:decode}). Since exactness costs nothing in the configurations that matter
+(AVX2 natively, SIMD in WebAssembly), the decoder defaults to exact mode.
+
+\paragraph*{Encoding: yes, in one place.} The encoder is 23\% faster in fast mode over the set,
+and almost all of the difference is the subband variances. NBIS sums them in float, one
+coefficient after the other; reproducing its rounding forces the same sequential sum, a chain
+of dependent additions that no vector unit can shorten. The fast mode sums in double with
+independent accumulators. On images whose variance is estimated over whole subbands (7 of the
+40, after the version 3.1 rule), the difference is large: \texttt{sample\_19} spends
+\varexact~ms on variances in exact mode and \varfast~ms in fast mode, and encodes in \encfast~ms
+instead of \encexact~ms. The fast encoder's files meet every encoder criterion of Annex AA
+against NBIS.
+
+\paragraph*{What else could a relaxed mode do?} Lifting would cut the arithmetic of the 9/7
+transform further, but arithmetic is not the bottleneck. Storing the intermediate of each split
+in 16-bit floats would halve the data movement that is, at the cost of precision; that and
+integer arithmetic remain untested.

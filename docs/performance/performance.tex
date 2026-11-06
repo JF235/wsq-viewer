@@ -1,0 +1,87 @@
+% Performance of the wsq-viewer WSQ codec: optimizations, exactness, backends and a GPU test.
+% Build: latexmk (see latexmkrc; LuaLaTeX).
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,textwidth=15cm,top=2.8cm,bottom=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{EB Garamond}[Numbers={Lining,Proportional}]
+\setmathfont{Garamond-Math.otf}
+\setmonofont{Inconsolatazi4}[Scale=MatchLowercase,
+  UprightFont=*-Regular, BoldFont=*-Bold, Extension=.otf]
+\usepackage{microtype}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=*,labelindent=\parindent}
+\usepackage[font=small,labelfont=sc,labelsep=period]{caption}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,decorations.pathreplacing,patterns}
+\tikzset{
+  >={Stealth[length=2.2mm]},
+  every picture/.style={line width=0.5pt},
+  box/.style={draw,minimum height=7mm,minimum width=14mm,inner sep=2pt},
+}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textit{Input:}}
+\algrenewcommand\algorithmicensure{\textit{Output:}}
+\algrenewcommand\alglinenumber[1]{\footnotesize #1}
+\algrenewcommand{\algorithmiccomment}[1]{\hfill\textit{#1}}
+
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\marker}[1]{\texttt{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\floor}[1]{\lfloor #1 \rfloor}
+
+% this report is mostly tables: let a page hold more of them
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{4}
+
+\title{Making WSQ Fast\\[0.4em]
+  \large Optimizations, exactness and backends of the \texttt{wsq-viewer} codec,\\
+  measured against NBIS 5.0.0}
+\author{João Felipe Contreras\\\small\texttt{github.com/JF235/wsq-viewer}}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This report describes how the WSQ codec of the \texttt{wsq-viewer} project was made fast
+without giving up exactness, and measures it. The codec is written in Rust and runs natively
+and in WebAssembly. In its exact mode it reproduces the NIST reference implementation (NBIS)
+bit for bit: the decoder outputs the same pixels and the encoder writes the same bytes on all
+86 decoder files and all 80 encoder cases of the NIST compliance set, on every instruction set
+and with any number of threads. The algorithms are written once, generically, over a small
+vector interface; backends implement that interface for scalar code, SSE2, AVX2 with FMA,
+AVX-512 and WebAssembly SIMD. We report the gain of each optimization, compare against NBIS,
+check whether relaxing bit exactness buys more speed, and test a GPU for batch decoding.
+\end{abstract}
+
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+\input{sections/introduction}
+\input{sections/method}
+\input{sections/architecture}
+\input{sections/exactness}
+\input{sections/optimizations}
+\input{sections/results}
+\input{sections/relaxation}
+\input{sections/gpu}
+\input{sections/limitations}
+\input{sections/references}
+
+\end{document}

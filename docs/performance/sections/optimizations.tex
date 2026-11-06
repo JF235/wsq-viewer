@@ -1,0 +1,111 @@
+\section{The optimizations, one by one}
+\label{sec:optimizations}
+
+The first working version already decoded image \texttt{a002} seven times faster than NBIS,
+because it vectorized the transform from the start. Table~\ref{tab:history} follows the decoder
+from there; each row was measured right after the change, on the same image and core, so the
+numbers carry the noise of separate runs (a few percent). Two changes that did not pay are
+listed as well.
+
+\begin{table}[ht]
+  \centering\small
+  \begin{tabular}{@{}rp{9.6cm}rr@{}}
+    \toprule
+    & change & AVX2 (ms) & vs NBIS \\
+    \midrule
+    0 & NBIS 5.0.0, for reference & 53.5 & 1.0$\times$ \\
+    1 & first version: NBIS schedules evaluated across lines, transposes for the row pass & 7.59 & 7.0$\times$ \\
+    2 & schedules cached per image size; buffers reused; pixel conversion vectorized & 6.17 & 8.7$\times$ \\
+    3 & entropy decoding writes straight into the coefficient array & 5.78 & 9.3$\times$ \\
+    -- & eight accumulators instead of four in the column kernel (no effect, reverted) & 5.86 & \\
+    4 & row-direct synthesis, two dependency chains (no effect) & 6.07 & \\
+    5 & row-direct synthesis, eight dependency chains & 5.16 & 10.4$\times$ \\
+    -- & template column kernel (slower with 8 lanes; kept for 4-lane backends only) & 5.45 & \\
+    6 & column kernel chosen by vector width & 4.55 & 11.8$\times$ \\
+    7 & entropy decoding into a linear buffer without branches, vector dequantization & 4.48 & 11.9$\times$ \\
+    8 & four threads: three entropy-coded blocks and the large splits in parallel & 2.47 & 21.7$\times$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Decoding \texttt{a002} at 0.75 bits per pixel, exact mode, AVX2, as the decoder evolved.}
+  \label{tab:history}
+\end{table}
+
+\subsection{Fixed costs}
+
+The first profile (stage times of version 1) showed 0.64~ms spent building the transform
+schedules, 1.19~ms converting coefficients to pixels with scalar code and a fresh 5.8~MB
+coefficient array per image, whose page faults spread over the other stages. Caching the
+schedules by line length and filter bank, keeping the buffers in the decoder object, and a
+vector pixel kernel brought the first 1.4~ms down.
+
+\subsection{Entropy decoding}
+
+Huffman decoding is sequential within a block: each code's length is known only after it is
+read. A bare loop that decodes symbols and discards them runs at 3.3~ns per symbol, but placing
+the symbols cost another 4.4~ns: the symbol type (a run of zeros or a value) is unpredictable,
+and every value write needed the bookkeeping of which subband row it belonged to. Two changes
+fixed this.
+\begin{enumerate}
+  \item A 10-bit lookup table whose entries hold the code length, the symbol's kind and its
+    value, so that 98\% of the symbols cost one table load (codes longer than 10 bits, about
+    2\%, take a slower path).
+  \item A first pass that writes indices, in stream order, into a linear buffer with one code
+    path for runs and values (Algorithm~\ref{alg:entropy}), and a second, vectorized pass that
+    dequantizes each subband row into its place in the coefficient array, without branches.
+\end{enumerate}
+The entropy stage of \texttt{a002} went from 1.62~ms to 0.63~ms (2.6$\times$); at 2.25 bits per
+pixel, with four times the symbols, from 5.78~ms to 2.40~ms.
+
+\begin{algorithm}[ht]
+  \caption{Branch-free placement of decoded symbols.}
+  \label{alg:entropy}
+  \begin{algorithmic}[1]
+    \Require a block's entropy-coded bits; a zeroed buffer $L$ with one spare slot; range $[k_0, k_1)$
+    \State $k \gets k_0$
+    \While{$k < k_1$}
+      \State $(\ell, \mathit{kind}, v) \gets \mathrm{LUT}[\text{next 10 bits}]$;\ consume $\ell$ bits \Comment{rare: long codes, escapes}
+      \State $\mathit{run} \gets v$ \textbf{if} $\mathit{kind} = \text{run}$ \textbf{else} $0$;\quad $\mathit{val} \gets v$ \textbf{if} $\mathit{kind} = \text{value}$ \textbf{else} $0$
+      \State $k \gets k + \mathit{run}$
+      \State $L[k] \gets \mathit{val}$ \Comment{a run writes a zero where the next value goes}
+      \State $k \gets k + [\mathit{val} \ne 0]$
+    \EndWhile
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{The inverse transform}
+
+After the fixed costs, the transform took two thirds of the time, and the vector version was
+only twice as fast as the scalar one with eight lanes. Two experiments located the problem.
+Replacing every schedule by the identity, which leaves only the data movement, cost 2.5 of the
+4.0~ms: the transform is limited by moving data, not by arithmetic. And the fast mode, which
+does half the multiplications, was not faster. With the identity schedules, the row pass,
+which transposed blocks of eight rows into a scratch buffer and back, cost twice as much as the
+column pass.
+
+The row-direct kernel (Section~\ref{sec:exactness}) removed the transposes of the synthesis but
+was not faster at first: each output accumulates about eight products, every addition waits
+four cycles for the previous one, and only two chains (even and odd) were in flight. Evaluating
+four vectors of each parity at once gives eight independent chains and brought the transform of
+\texttt{a002} from 3.99 to 3.13~ms. The same trick made the column pass slower on AVX2, where
+the strip of 64 columns already provides enough independent work, so each backend uses the
+kernel that suits its width. Fusing the column and the row pass of a split, so that the
+intermediate stays in cache, was considered and rejected: synthesis cannot run in place (the
+lowpass and highpass halves are read far from where the outputs go), and the copy it would need
+moves as much data as it saves.
+
+\subsection{Threads}
+
+Inside one image, the three entropy-coded blocks of encoder number two are independent, and
+their positions in the linear buffer are known from the subband sizes, so three threads decode
+them. The transform's large splits (the image and its quadrants) share columns and then rows
+among threads, separated by a barrier; the small, deep splits run on one thread, where
+synchronization would cost more than the work.
+
+\subsection{The encoder}
+
+The same ideas, plus four specific to encoding: quantization divides once per coefficient with
+the truncation identity of Section~\ref{sec:exactness} instead of branching per sign (0.72 to
+0.27~ms on \texttt{cmp00001}); normalization converts bytes to floats eight at a time; the
+tokenizer skips zeros a vector at a time, testing eight or sixteen coefficients with one
+comparison; and the bit writer emits code and extra bits in one call and four bytes at a time.
+The encoder of \texttt{a002} went from 10.3~ms in its first version to 6.9~ms.

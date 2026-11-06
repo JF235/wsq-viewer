@@ -1,0 +1,61 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Decoding and encoding on one core}
+
+Tables~\ref{tab:decode} and~\ref{tab:encode} sum the per-image times over the 40 images. With
+AVX2, decoding is about 11 times faster than NBIS and encoding 4 to 6 times; SSE2, which every
+x86-64 processor has, keeps 9 and 4 times. Even the scalar backend is more than five times
+faster than NBIS at decoding: most of the gain comes from the algorithms (cached schedules,
+branch-free entropy decoding, fewer passes over memory), not from the vector width.
+
+\input{generated/decode}
+\input{generated/encode}
+
+Table~\ref{tab:stages} breaks the times of \texttt{a002} into stages. The inverse transform
+still dominates decoding (about 3.2 of 4.8~ms); entropy decoding and dequantization take
+1.0~ms together. In the encoder, the forward transform takes half the time and the tokenizer is
+the next largest stage.
+
+\input{generated/stages}
+
+\subsection{Threads and batches}
+
+A single image decodes 1.7 times faster with four threads (Table~\ref{tab:threads}); the
+serial parts (the deep splits, the largest entropy-coded block) limit the gain, and small
+images gain little. Batches scale better, since images are independent: on the four performance
+cores, 829 images per second, against 319 on one core (Table~\ref{tab:batch}). Eight threads
+(the performance cores with both their hardware threads) reach 934; twelve, adding the
+efficiency cores, are slower, because the transform saturates memory bandwidth.
+
+\input{generated/threads}
+\input{generated/batch}
+
+\subsection{WebAssembly}
+
+The extension runs the codec as WebAssembly. With SIMD the WebAssembly build is 1.35 times
+slower than native AVX2 and still eight times faster than native NBIS; without SIMD it is about
+three times slower than with it (Table~\ref{tab:wasm}). Its outputs are identical to NBIS's: WebAssembly
+float arithmetic follows IEEE 754 exactly, and the exact kernels use no fused operations.
+
+\input{generated/wasm}
+
+\subsection{A server processor with AVX-512}
+\label{sec:server}
+
+The laptop has no AVX-512, so the test suite and the single-core measurements were repeated on a
+server processor that has it, an Intel Xeon Gold 6330, which other users shared at the time.
+Every test passes there with AVX-512 among the backends: the exact decoder reproduces NBIS on the
+86 decoder files with 1 and 4 threads, and the exact encoder writes NBIS's bytes in the 80 cases.
+
+Table~\ref{tab:server} gives the times. Doubling the vector width from AVX2 to AVX-512 gains
+little, as expected from a transform limited by data movement (Section~\ref{sec:optimizations}).
+In four rounds that alternated the two backends on the same core, exact decoding was 8 to 15\%
+faster with AVX-512 in every round and exact encoding 2 to 8\% (one round, at 27\%, was an
+outlier); fast decoding and fast encoding showed no consistent difference. The absolute times
+varied by up to 20\% between rounds, because of the other jobs on the server, so only the ratios
+within a round are reliable. A server core is slower than the laptop's performance core (NBIS takes
+2.5~s for the set against 1.4~s), but the speedup over NBIS is similar: about 12 to 13 times at
+decoding and 4.5 to 5.7 times at encoding.
+
+\input{generated/server}

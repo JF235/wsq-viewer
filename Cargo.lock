@@ -4,18 +4,18 @@ version = 4
 
 [[package]]
 name = "wsq"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "wsq-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "wsq",
 ]
 
 [[package]]
 name = "wsq-wasm"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "wsq",
 ]

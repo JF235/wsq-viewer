@@ -2,7 +2,7 @@
   "name": "wsq-viewer",
   "displayName": "WSQ Viewer",
   "description": "Open WSQ fingerprint images like any other image: zoom, diffs, export to PNG. NBIS-exact decoder in WebAssembly, nothing to install.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "jf235",
   "license": "MIT",
   "repository": {

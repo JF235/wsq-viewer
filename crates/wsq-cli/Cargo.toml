@@ -1,6 +1,6 @@
 [package]
 name = "wsq-cli"
-description = "Command-line tool for the wsq codec: encode, decode, inspect, compare and benchmark"
+description = "Command-line tool for the wsq codec: encode, decode, inspect and benchmark"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

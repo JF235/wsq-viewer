@@ -1,0 +1,72 @@
+\section{Introduction}
+\label{sec:introduction}
+
+In the early 1990s the FBI held some 200 million fingerprint records on inked paper cards and
+set out to digitize them. Scanned at 500 pixels per inch with 8 bits per pixel, a ten-print card
+takes about 10 megabytes, so compression was a necessity. JPEG, the obvious candidate, codes the
+image in $8\times 8$ blocks, and tests by the FBI and the UK Home Office found its tiling
+artifacts unavoidable on fingerprints at compression ratios above about 10:1. Tom Hopper of the
+FBI, with Jonathan Bradley and Christopher Brislawn of Los Alamos National Laboratory, designed
+instead a codec built on a discrete wavelet transform, which has no blocks and preserves fine
+detail such as sweat pores better at the same bit rate. The FBI adopted it in 1993 under the
+name WSQ, for \emph{Wavelet Scalar Quantization} \cite{brislawn1995,bradley1994}.
+
+WSQ remains the standard compression for 500 ppi fingerprint images in ANSI/NIST-ITL
+transactions (record types 4 and 14) and in the FBI's EBTS. A typical 500 ppi image compressed at
+0.75 bits per pixel shrinks by a factor of about 15.
+
+\subsection{What the specification fixes}
+
+The specification \cite{wsq31} has three parts. Part~1 defines the decoder, the compressed
+data format and a \emph{class} of encoders. Part~2 defines how implementations are tested for
+compliance. Part~3 fixes the parameters of the one encoder the FBI approves, called
+\emph{encoder number two} since version~3.1 of 2010.
+
+The split matters. Everything the decoder needs travels inside the file: the wavelet filters,
+the quantizer bin widths and the Huffman tables. A decoder is therefore generic: it must accept
+any filter bank of the allowed kinds, any bin widths and any Huffman tables. An encoder, on the
+other hand, only has to produce valid streams with acceptable accuracy, and an FBI-compliant
+encoder must in addition choose its parameters exactly as Part~3 prescribes. Version~3.1 changed
+only that choice (the way subband variances are estimated, Section~\ref{sec:variance}); the
+decoder is the same as in 1993.
+
+\subsection{Overview}
+
+Figure~\ref{fig:pipeline} shows the pipeline. The encoder
+\begin{enumerate}
+  \item shifts and scales the image to a signed range (Section~\ref{sec:normalization});
+  \item decomposes it with a two-dimensional symmetric wavelet transform into 64 subbands, each
+        holding one band of horizontal and vertical spatial frequencies
+        (Section~\ref{sec:transform});
+  \item quantizes each subband with a uniform scalar quantizer whose step depends on the
+        subband's variance and on the target bit rate (Section~\ref{sec:quantization});
+  \item codes the quantizer indices with Huffman codes designed for the image
+        (Section~\ref{sec:entropy});
+  \item writes everything, tables included, as a sequence of marker segments in the style of
+        JPEG (Section~\ref{sec:format}).
+\end{enumerate}
+The decoder undoes each step in reverse order (Section~\ref{sec:decoding}). Only the
+quantization loses information; the transform is invertible and the entropy coding is
+lossless. Section~\ref{sec:compliance} describes how implementations are tested and reports
+how the procedures in this document compare with the NIST reference implementation.
+Section~\ref{sec:implementation} collects implementation notes.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/pipeline}
+  \caption{The WSQ encoder (top) and decoder (bottom). The labels between the rows are the
+  parameters the encoder writes into the stream and the marker segments that carry them.}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Notation}
+
+An image has $Y$ lines (rows) and $X$ samples per line (columns), the names the
+specification uses in the frame header. A pixel is $I(m,n)$ with row $m$ and column $n$,
+both counted from zero at the upper left corner. The 64 subbands are numbered
+$k = 0,\dots,63$; subband $k$ has $X_k$ columns and $Y_k$ rows and holds the wavelet
+coefficients $a_k(m,n)$. Quantization maps them to integer indices $p_k(m,n)$ with bin width
+$Q_k$ and zero-bin width $Z_k$. The analysis filters are $h_0$ (lowpass) and $h_1$
+(highpass); the synthesis filters are $f_0$ and $f_1$. For a real $x$, $\floor{x}$ is the
+largest integer not above $x$ and $\ceil{x}$ the smallest integer not below it. Hexadecimal
+byte values are written \hex{FF}.

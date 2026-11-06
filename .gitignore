@@ -1,0 +1,6 @@
+# LaTeX build output
+docs/algorithm/build/
+docs/algorithm/build.log
+
+# Python
+__pycache__/

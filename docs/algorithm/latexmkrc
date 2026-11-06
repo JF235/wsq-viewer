@@ -1,0 +1,4 @@
+$pdf_mode = 4;          # LuaLaTeX
+$out_dir = 'build';
+@default_files = ('wsq.tex');
+$lualatex = 'lualatex -interaction=nonstopmode -halt-on-error -file-line-error %O %S';

@@ -1,0 +1,67 @@
+\section{Compliance}
+\label{sec:compliance}
+
+Part~2 of the specification defines how an implementation is certified. NIST distributes a set
+of test images, the implementer runs them through the encoder and the decoder, and NIST compares
+the outputs with those of a reference implementation within the tolerances of Annex AA
+(Table~\ref{tab:criteria}). The tolerances accept the small numerical differences between
+correct implementations (for instance single against double precision) and nothing more.
+
+\begin{table}[ht]
+  \centering\small
+  \begin{tabular}{@{}lp{10.6cm}@{}}
+    \toprule
+    test & requirement \\
+    \midrule
+    encoder & compressed file size, comments excluded, within 0.4\% of the reference \\
+            & every bin width $Q_k$ and zero-bin width $Z_k$ within 0.051\% of the reference \\
+            & at least 99.99\% of the quantizer indices equal to the reference, none differing by more than 1 \\
+    decoder & at least 99.9\% of the reconstructed pixels equal to the reference, none differing by more than 1 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Compliance criteria (Annex AA).}
+  \label{tab:criteria}
+\end{table}
+
+The NIST reference data set, version 2.0 \cite{nistcert}, contains
+\begin{itemize}
+  \item 40 images to encode, in PGM format, between 375 and 1600 pixels wide and 526 and 1500
+        pixels high: rolled prints, plain impressions and four-finger slaps, scanned from cards
+        or captured live, each to be compressed at 0.75 and at 2.25 bits per pixel;
+  \item 86 WSQ files to decode: the same 40 images compressed at each rate, and 6 files that
+        use other filter banks (an HS bank with lengths 6 and 10, an HS bank with lengths 10 and 10,
+        and a WS bank with lengths 9 and 11);
+  \item for two of the files, the quantizer indices of all 60 subbands as text, which allows an
+        exact check of the entropy decoder.
+\end{itemize}
+The reference outputs themselves are not public: certification is done by NIST. The NBIS
+software that NIST publishes \cite{nbis}, however, contains the reference encoder and decoder (\texttt{cwsq}
+and \texttt{dwsq}), and anyone can apply the criteria of Table~\ref{tab:criteria} against it.
+
+\subsection{How this document was checked}
+
+Every procedure in this document was implemented exactly as written, in double precision and
+without optimization, in a short Python program (\texttt{tools/wsqref.py} next to this
+document), and compared with NBIS 5.0.0 on the full NIST data set. Table~\ref{tab:checks} shows
+the results. The program meets every criterion with a wide margin, and its Huffman tables are
+identical to those of NBIS. The remaining differences come from NBIS computing in single
+precision.
+
+\begin{table}[ht]
+  \centering\small
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    check & result & criterion \\
+    \midrule
+    decoded indices of the two reference files & identical in all 60 subbands of both & exact \\
+    decoded pixels, 86 files & at least 99.9925\% equal, never more than 1 apart & 99.9\%, 1 \\
+    bin widths, 40 images $\times$ 2 rates & within 0.0077\% & 0.051\% \\
+    quantizer indices, same 80 cases & at least 99.9955\% equal, never more than 1 apart & 99.99\%, 1 \\
+    file size, same 80 cases & within 0.039\% & 0.4\% \\
+    Huffman tables built from the NBIS indices & 160 of 160 identical & -- \\
+    \bottomrule
+  \end{tabular}
+  \caption{The algorithms of this document, run as written, against NBIS 5.0.0 on the NIST
+  reference data set version 2.0. All 86 decoder cases and all 80 encoder cases pass.}
+  \label{tab:checks}
+\end{table}

@@ -1,0 +1,35 @@
+\begin{tikzpicture}[node distance=5mm and 4.5mm,
+    stage/.style={box,minimum width=18mm,font=\small,align=center},
+    side/.style={font=\footnotesize,align=center,text=black!75}]
+  % encoder
+  \node[font=\small] (img) {$I(m,n)$};
+  \node[stage,right=of img] (norm) {normalize};
+  \node[stage,right=of norm] (swt) {wavelet\\transform};
+  \node[stage,right=of swt] (quant) {quantize};
+  \node[stage,right=of quant] (huff) {Huffman\\encode};
+  \node[font=\small,right=of huff] (out) {stream};
+  \draw[->] (img) -- (norm);
+  \draw[->] (norm) -- (swt);
+  \draw[->] (swt) -- node[above,font=\footnotesize] {$a_k$} (quant);
+  \draw[->] (quant) -- node[above,font=\footnotesize] {$p_k$} (huff);
+  \draw[->] (huff) -- (out);
+  % side information
+  \node[side,below=4mm of norm] (sM) {$M,\ R$\\\marker{SOF}};
+  \node[side,below=4mm of swt] (sF) {$h_0,\ h_1$\\\marker{DTT}};
+  \node[side,below=4mm of quant] (sQ) {$Q_k,\ Z_k,\ C$\\\marker{DQT}};
+  \node[side,below=4mm of huff] (sH) {tables\\\marker{DHT}};
+  \foreach \s/\t in {sM/norm,sF/swt,sQ/quant,sH/huff} \draw[densely dotted] (\t) -- (\s);
+  % decoder
+  \node[stage,below=4mm of sM] (dnorm) {denormalize\\and round};
+  \node[stage,below=4mm of sF] (dswt) {inverse\\transform};
+  \node[stage,below=4mm of sQ] (dquant) {dequantize};
+  \node[stage,below=4mm of sH] (dhuff) {Huffman\\decode};
+  \node[font=\small] at (out |- dhuff) (in) {stream};
+  \node[font=\small] at (img |- dnorm) (rec) {$\hat I(m,n)$};
+  \foreach \s/\t in {sM/dnorm,sF/dswt,sQ/dquant,sH/dhuff} \draw[densely dotted] (\s) -- (\t);
+  \draw[->] (in) -- (dhuff);
+  \draw[->] (dhuff) -- node[above,font=\footnotesize] {$p_k$} (dquant);
+  \draw[->] (dquant) -- node[above,font=\footnotesize] {$\hat a_k$} (dswt);
+  \draw[->] (dswt) -- (dnorm);
+  \draw[->] (dnorm) -- (rec);
+\end{tikzpicture}

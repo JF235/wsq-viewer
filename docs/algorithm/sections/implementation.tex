@@ -1,0 +1,53 @@
+\section{Implementation notes}
+\label{sec:implementation}
+
+This section collects the points where an implementation has to go beyond the text of the
+specification, or where the NIST reference implementation (NBIS) differs from it. Each item says
+whether it was verified while writing this document. The section will grow with the Rust
+implementation of the \texttt{wsq-viewer} project, which will add its choices of numerical
+precision, its deviations from NBIS, if any, and measured performance.
+
+\begin{description}[leftmargin=0pt]
+  \item[Precision.] The specification's \emph{reference} transform is in double precision, while
+    NBIS computes in single precision. The double-precision program used for
+    Section~\ref{sec:compliance} differs from NBIS by at most one grey level, in fewer than
+    0.01\% of the pixels, and by at most one quantizer index (verified).
+
+  \item[The full tree.] NBIS splits the image into 60 subbands and never splits the quadrant of
+    subbands 60--63, which encoder number two discards. A decoder that builds all 64 subbands
+    produces the same image whenever $Q_{60..63} = 0$, and also decodes the (hypothetical) files
+    that use them (verified on the NIST data, where all four are always zero).
+
+  \item[All-ones Huffman codes.] All 86 WSQ files of the NIST decoder test set contain a table
+    that assigns an all-ones code, which the specification forbids; NBIS decodes them with a
+    warning. A decoder should accept them, and an encoder should never produce them (verified).
+
+  \item[Variance switch.] The specification uses the window when the sum of the four variances
+    exceeds 20\,000; NBIS uses it unless the sum is below 20\,000. The two differ only when the sum
+    is exactly 20\,000 (from reading the NBIS source).
+
+  \item[Small images.] With the other side large, an image needs at least 49 columns and 81 rows
+    (81 pixels on each side for a square) for every variance window to hold two or more
+    coefficients. Below that, Equation~\eqref{eq:variance} is undefined for some subband. The
+    specification requires compliance only for images of at least 400 pixels on each side and
+    says nothing about smaller ones, so an encoder has to choose a behaviour (verified by
+    computing the windows for every size).
+
+  \item[Constant images.] A uniform image has $R = 0$ and cannot be normalized by
+    Equation~\eqref{eq:normalize}; an encoder has to treat it as a special case.
+
+  \item[Blocks beyond three.] The block headers do not say which subbands a block holds. Since the
+    indices are simply concatenated, a decoder decodes each block until its data ends and checks
+    at the end that the total matches $\sum_{k:\,Q_k>0} X_kY_k$.
+
+  \item[Untrusted input.] A viewer opens files from anywhere. Image dimensions come from the frame
+    header and set the size of every allocation, symbol expansions can produce long runs, and
+    tables may be missing, redefined or inconsistent. Every count read from the file has to be
+    checked against what remains to be decoded before anything is written.
+
+  \item[Coefficient range.] The escape codes carry at most 16-bit magnitudes, so an index must fit
+    in $\pm 65535$. The authors of an independent Rust implementation report that on images with
+    almost no detail, such as smooth gradients, encoder number two can produce bins fine enough to
+    exceed this range, and that NBIS then wraps the values around \cite{wsqcodec}. This has not
+    been verified here yet.
+\end{description}

@@ -1,0 +1,25 @@
+\begin{tikzpicture}[x=3.2cm,y=-1cm,font=\small]
+  % a band from #1 to #2 on row #3, label #4, spectrum orientation #5 (1 normal, -1 mirrored)
+  \newcommand{\band}[5]{%
+    \draw (#1,#3) rectangle (#2,#3+0.8);
+    \node at ({(#1+#2)/2},#3+0.27) {#4};
+    \ifnum#5=1
+      \draw[->,gray] ({#1+0.12*(#2-#1)},#3+0.6) -- ({#2-0.12*(#2-#1)},#3+0.6);
+    \else
+      \draw[<-,gray] ({#1+0.12*(#2-#1)},#3+0.6) -- ({#2-0.12*(#2-#1)},#3+0.6);
+    \fi}
+  \band{0}{4}{0}{$x$}{1}
+  \band{0}{2}{1.6}{$L$}{1}
+  \band{2}{4}{1.6}{$H$, mirrored}{-1}
+  \band{0}{1}{3.2}{$LL$\quad path $00$}{1}
+  \band{1}{2}{3.2}{$LH$\quad path $01$}{-1}
+  \band{2}{3}{3.2}{$HH$\quad path $11$}{1}
+  \band{3}{4}{3.2}{$HL$\quad path $10$}{-1}
+  \draw[densely dotted] (1,0.8) -- (1,1.6) (3,0.8) -- (3,1.6);
+  \draw[densely dotted] (0.5,2.4) -- (0.5,3.2) (1.5,2.4) -- (1.5,3.2) (2.5,2.4) -- (2.5,3.2) (3.5,2.4) -- (3.5,3.2);
+  \foreach \p in {0,1,2,3}
+    \node[font=\footnotesize,text=black!70] at (\p+0.5,4.35) {position \p};
+  \draw[->] (0,4.9) -- (4.15,4.9) node[right] {$\omega$};
+  \foreach \t/\l in {0/{0},1/{\pi/4},2/{\pi/2},3/{3\pi/4},4/{\pi}}
+    \draw (\t,4.83) -- (\t,4.97) node[below,font=\footnotesize] {$\l$};
+\end{tikzpicture}

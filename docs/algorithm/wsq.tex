@@ -1,0 +1,81 @@
+% The WSQ fingerprint image compression algorithm: a didactic description.
+% Build: latexmk (see latexmkrc; LuaLaTeX).
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,textwidth=15cm,top=2.8cm,bottom=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{EB Garamond}[Numbers={Lining,Proportional}]
+\setmathfont{Garamond-Math.otf}
+\setmonofont{Inconsolatazi4}[Scale=MatchLowercase,
+  UprightFont=*-Regular, BoldFont=*-Bold, Extension=.otf]
+\usepackage{microtype}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=*,labelindent=\parindent}
+\usepackage[font=small,labelfont=sc,labelsep=period]{caption}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,decorations.pathreplacing,matrix,patterns}
+\tikzset{
+  >={Stealth[length=2.2mm]},
+  every picture/.style={line width=0.5pt},
+  box/.style={draw,minimum height=7mm,minimum width=14mm,inner sep=2pt},
+  op/.style={draw,circle,inner sep=1pt,minimum size=5mm},
+  lbl/.style={font=\small},
+}
+
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textit{Input:}}
+\algrenewcommand\algorithmicensure{\textit{Output:}}
+\algrenewcommand\alglinenumber[1]{\footnotesize #1}
+\algrenewcommand{\algorithmiccomment}[1]{\hfill\textit{#1}}
+
+\usepackage[hidelinks]{hyperref}
+
+% Notation
+\newcommand{\marker}[1]{\texttt{#1}}
+\newcommand{\hex}[1]{\texttt{0x#1}}
+\newcommand{\floor}[1]{\lfloor #1 \rfloor}
+\newcommand{\ceil}[1]{\lceil #1 \rceil}
+\newcommand{\Z}{\mathbb{Z}}
+
+\title{The WSQ Fingerprint Image Compression Algorithm\\[0.4em]
+  \large A didactic description of the FBI specification IAFIS-IC-0110 (version 3.1)}
+\author{João Felipe Contreras\\\small\texttt{github.com/JF235/wsq-viewer}}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+WSQ (Wavelet Scalar Quantization) is the compression method the FBI adopted in 1993 for
+8-bit, 500 ppi fingerprint images, and it is still how fingerprints travel in ANSI/NIST-ITL
+transactions. This document explains the algorithm from first principles: the symmetric
+wavelet transform and its 64-subband decomposition, the adaptive scalar quantizer of
+encoder number two, the Huffman coding model and the byte-level file format. It follows
+the specification closely, adds the reasoning the specification leaves implicit, and gives
+pseudocode for every step. Every procedure described here was checked against the NIST
+reference implementation (NBIS 5.0.0) and the NIST compliance data set.
+\end{abstract}
+
+\tableofcontents
+
+\input{sections/introduction}
+\input{sections/normalization}
+\input{sections/transform}
+\input{sections/quantization}
+\input{sections/entropy}
+\input{sections/format}
+\input{sections/decoding}
+\input{sections/compliance}
+\input{sections/implementation}
+\input{sections/references}
+
+\end{document}

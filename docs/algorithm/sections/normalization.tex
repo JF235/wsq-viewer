@@ -1,0 +1,36 @@
+\section{Normalization}
+\label{sec:normalization}
+
+Before the transform, the encoder maps the 8-bit samples to a signed range centred on zero
+(Annex A.1 of the specification):
+\begin{equation}
+  I'(m,n) = \frac{I(m,n) - M}{R}.
+  \label{eq:normalize}
+\end{equation}
+The specification leaves $M$ and $R$ to the encoder. Encoder number two uses the image mean
+and the largest excursion from it, scaled to 128:
+\begin{equation}
+  M = \frac{1}{XY}\sum_{m,n} I(m,n), \qquad
+  R = \frac{1}{128}\max\bigl(I_{\max} - M,\; M - I_{\min}\bigr),
+  \label{eq:MR}
+\end{equation}
+so that $I'$ lies in $[-128, 128]$ whatever the contrast of the original. This makes the
+subband variances, and with them the quantizer design of Section~\ref{sec:quantization},
+independent of the image's brightness and contrast.
+
+The decoder inverts the mapping and rounds to the nearest integer in the 8-bit range:
+\begin{equation}
+  \hat I(m,n) = \min\Bigl(255,\ \max\bigl(0,\ \floor{\hat I'(m,n)\,R + M + \tfrac12}\bigr)\Bigr).
+  \label{eq:denormalize}
+\end{equation}
+The specification does not spell out the rounding; this is what the NIST reference decoder
+does, and the compliance tolerance of one grey level (Section~\ref{sec:compliance}) absorbs
+any other reasonable choice.
+
+Two details are easy to miss. First, $M$ and $R$ travel in the frame header as decimal
+\emph{scaled integers} (Section~\ref{sec:scaled}), which keep about five significant digits.
+The encoder normalizes with the exact values and the decoder denormalizes with the rounded
+ones; the mismatch is a relative error below $10^{-4}$ and has no visible effect. Second,
+a constant image has $R = 0$, and Equation~\eqref{eq:normalize} divides by zero. The
+specification does not cover this case, and an implementation has to decide what to do
+(Section~\ref{sec:implementation}).

@@ -1,0 +1,30 @@
+\begin{tikzpicture}[node distance=4mm and 6mm,
+    f/.style={box,minimum width=9mm,font=\small},
+    s/.style={box,minimum width=7mm,font=\small}]
+  \node[font=\small] (x) {$x$};
+  \coordinate[right=5mm of x] (fork);
+  \node[f,above right=4mm and 6mm of fork] (h1) {$h_1$};
+  \node[f,below right=4mm and 6mm of fork] (h0) {$h_0$};
+  \node[s,right=of h1] (d1) {$\downarrow 2$};
+  \node[s,right=of h0] (d0) {$\downarrow 2$};
+  \node[s,right=11mm of d1] (u1) {$\uparrow 2$};
+  \node[s,right=11mm of d0] (u0) {$\uparrow 2$};
+  \node[f,right=of u1] (f1) {$f_1$};
+  \node[f,right=of u0] (f0) {$f_0$};
+  \node[op,right=8mm of $(f1)!0.5!(f0)$] (sum) {$+$};
+  \node[font=\small,right=5mm of sum] (xh) {$\hat x$};
+  \draw (x) -- (fork);
+  \draw[->] (fork) |- (h1);
+  \draw[->] (fork) |- (h0);
+  \draw[->] (h1) -- (d1);
+  \draw[->] (h0) -- (d0);
+  \draw[->] (d1) -- node[above,font=\small] {$a_1$} (u1);
+  \draw[->] (d0) -- node[above,font=\small] {$a_0$} (u0);
+  \draw[->] (u1) -- (f1);
+  \draw[->] (u0) -- (f0);
+  \draw[->] (f1) -| (sum);
+  \draw[->] (f0) -| (sum);
+  \draw[->] (sum) -- (xh);
+  \node[font=\footnotesize,above=7mm of $(h1)!0.5!(d1)$] {analysis};
+  \node[font=\footnotesize,above=7mm of $(u1)!0.5!(f1)$] {synthesis};
+\end{tikzpicture}

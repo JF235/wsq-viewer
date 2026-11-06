@@ -10,9 +10,10 @@ const data = readFileSync(file);
 const ptr = w.wsq_alloc(data.length);
 new Uint8Array(w.memory.buffer, ptr, data.length).set(data);
 
-let dims = w.wsq_decode(ptr, data.length, fast); // warm-up
-if (!dims) throw new Error('decode failed');
-const width = dims >>> 16, height = dims & 0xffff;
+if (!w.wsq_decode(ptr, data.length, fast)) { // warm-up
+  throw new Error(new TextDecoder().decode(new Uint8Array(w.memory.buffer, w.wsq_error_ptr(), w.wsq_error_len())));
+}
+const width = w.wsq_width(), height = w.wsq_height();
 if (ref && ref !== '--fast') {
   const expect = readFileSync(ref);
   const got = new Uint8Array(w.memory.buffer, w.wsq_pixels(), width * height);
@@ -28,4 +29,4 @@ for (let i = 0; i < reps; i++) {
   t.push(Number(process.hrtime.bigint() - t0) / 1e6);
 }
 t.sort((a, b) => a - b);
-console.log(`${file.split('/').pop()} ${width}x${height} lanes=${w.wsq_backend()} best=${t[0].toFixed(3)} ms median=${t[reps >> 1].toFixed(3)} ms`);
+console.log(`${file.split('/').pop()} ${width}x${height} lanes=${w.wsq_lanes()} best=${t[0].toFixed(3)} ms median=${t[reps >> 1].toFixed(3)} ms`);

@@ -74,18 +74,18 @@ const tests: [string, () => Promise<void>][] = [
     assert(input instanceof vscode.TabInputCustom && input.viewType === VIEW_TYPE, `active tab is ${describeInput(input)}`);
   }],
 
-  ['fast mode is the default and the setting switches to exact', async () => {
+  ['exact mode is the default and the setting switches to fast', async () => {
     const uri = file('ridges.wsq');
     await openRendered('ridges.wsq');
-    await preview(uri, s => s.mode === 'fast');
+    await preview(uri, s => s.mode === 'exact');
     const config = vscode.workspace.getConfiguration('wsqViewer');
-    await config.update('decodeMode', 'exact', vscode.ConfigurationTarget.Global);
+    await config.update('decodeMode', 'fast', vscode.ConfigurationTarget.Global);
     try {
-      await preview(uri, s => s.mode === 'exact' && s.rendered);
+      await preview(uri, s => s.mode === 'fast' && s.rendered);
     } finally {
       await config.update('decodeMode', undefined, vscode.ConfigurationTarget.Global);
     }
-    await preview(uri, s => s.mode === 'fast');
+    await preview(uri, s => s.mode === 'exact');
   }],
 
   ['.wsq files get the WSQ language and its icon', async () => {

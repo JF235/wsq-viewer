@@ -42,9 +42,9 @@ export interface PreviewSnapshot {
 
 const GIT_LFS_PREFIX = 'version https://git-lfs.github.com/spec/v1';
 
-/** Whether `uri` is decoded in fast mode (the default) rather than NBIS's exact arithmetic. */
+/** Whether `uri` is decoded in fast mode rather than NBIS's exact arithmetic (the default). */
 export function decodesFast(uri: vscode.Uri): boolean {
-  return vscode.workspace.getConfiguration('wsqViewer', uri).get<string>('decodeMode', 'fast') !== 'exact';
+  return vscode.workspace.getConfiguration('wsqViewer', uri).get<string>('decodeMode', 'exact') === 'fast';
 }
 
 /** A Git LFS pointer shown in a diff instead of the image (as VS Code's image preview checks). */

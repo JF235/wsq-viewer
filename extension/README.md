@@ -26,9 +26,10 @@ The decoder is a Rust implementation of the WSQ specification compiled to WebAss
 inside the extension: nothing else to install. It decodes a 1452 x 1006 image in a few
 milliseconds, and images never leave your machine. Two modes (setting `wsqViewer.decodeMode`):
 
-- `fast` (default): optimized arithmetic, within the tolerances of the specification (at least
-  99.9% of the pixels equal to the NIST reference decoder, none off by more than one grey level);
-- `exact`: the pixels of the NIST reference decoder (NBIS 5.0.0), bit for bit, as checked on the
-  NIST compliance data set.
+- `exact` (default): the pixels of the NIST reference decoder (NBIS 5.0.0), bit for bit, as
+  checked on the NIST compliance data set;
+- `fast`: optimized arithmetic, a few percent faster, within the tolerances of the specification
+  (at least 99.9% of the pixels equal to the reference decoder, none off by more than one grey
+  level).
 
 Source, algorithm description and measurements: <https://github.com/JF235/wsq-viewer>.

@@ -49,6 +49,24 @@
         }
       }
     ],
+    "configuration": {
+      "title": "WSQ Viewer",
+      "properties": {
+        "wsqViewer.decodeMode": {
+          "type": "string",
+          "enum": [
+            "fast",
+            "exact"
+          ],
+          "enumDescriptions": [
+            "Optimized arithmetic; within the tolerances of the WSQ specification (at least 99.9% of the pixels equal to the reference decoder, none off by more than one grey level).",
+            "The pixels of the NIST reference decoder (NBIS 5.0.0), bit for bit."
+          ],
+          "default": "fast",
+          "markdownDescription": "How WSQ images are decoded for display and for **Export as PNG**."
+        }
+      }
+    },
     "customEditors": [
       {
         "viewType": "wsqViewer.preview",

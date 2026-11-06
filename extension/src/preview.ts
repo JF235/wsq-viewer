@@ -36,10 +36,16 @@ export interface PreviewSnapshot {
   height?: number;
   rendered: boolean;
   scale: Scale;
+  mode?: 'fast' | 'exact';
   error?: string;
 }
 
 const GIT_LFS_PREFIX = 'version https://git-lfs.github.com/spec/v1';
+
+/** Whether `uri` is decoded in fast mode (the default) rather than NBIS's exact arithmetic. */
+export function decodesFast(uri: vscode.Uri): boolean {
+  return vscode.workspace.getConfiguration('wsqViewer', uri).get<string>('decodeMode', 'fast') !== 'exact';
+}
 
 /** A Git LFS pointer shown in a diff instead of the image (as VS Code's image preview checks). */
 async function isGitLfsPointer(uri: vscode.Uri): Promise<boolean> {
@@ -80,6 +86,7 @@ export class Preview implements vscode.Disposable {
   private image: WsqImage | undefined;
   private info: WsqInfo | undefined;
   private fileSize: number | undefined;
+  private mode: 'fast' | 'exact' | undefined;
   private error: string | undefined;
   private rendered = false;
   private loading: Promise<void> | undefined;
@@ -151,6 +158,7 @@ export class Preview implements vscode.Disposable {
       height: this.image?.height,
       rendered: this.rendered,
       scale: this.scale,
+      mode: this.mode,
       error: this.error,
     };
   }
@@ -236,8 +244,10 @@ export class Preview implements vscode.Disposable {
       const data = await vscode.workspace.fs.readFile(this.resource);
       this.fileSize = data.length;
       const codec = await this.codec;
+      const fast = decodesFast(this.resource);
       this.info = codec.info(data);
-      this.image = codec.decode(data);
+      this.image = codec.decode(data, fast);
+      this.mode = fast ? 'fast' : 'exact';
     } catch (e) {
       this.error = errorMessage(e);
     } finally {
@@ -257,7 +267,8 @@ export class Preview implements vscode.Disposable {
     this.post({ type: 'setActive', value: this.panel.active });
   }
 
-  private reload(): void {
+  /** Read and decode the file again and repaint, keeping zoom and scroll. */
+  reload(): void {
     if (this.state === 'disposed') {
       return;
     }
@@ -412,6 +423,12 @@ export class PreviewManager implements vscode.CustomReadonlyEditorProvider, View
 
   get activePreview(): Preview | undefined {
     return this.active;
+  }
+
+  reloadAll(): void {
+    for (const p of this.previews) {
+      p.reload();
+    }
   }
 
   snapshots(): PreviewSnapshot[] {

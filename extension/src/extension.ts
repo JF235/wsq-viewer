@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { WsqCodec } from './codec.ts';
 import { describe } from './info.ts';
 import { encodePng } from './png.ts';
-import { PreviewManager, VIEW_TYPE, type PreviewSnapshot } from './preview.ts';
+import { decodesFast, PreviewManager, VIEW_TYPE, type PreviewSnapshot } from './preview.ts';
 import { StatusBar } from './statusBar.ts';
 
 /** What the integration tests read (only returned in test mode). */
@@ -46,6 +46,11 @@ export function activate(context: vscode.ExtensionContext): TestApi | undefined 
     vscode.window.registerCustomEditorProvider(VIEW_TYPE, manager, {
       supportsMultipleEditorsPerDocument: true,
     }),
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('wsqViewer.decodeMode')) {
+        manager.reloadAll();
+      }
+    }),
     vscode.commands.registerCommand('wsqViewer.zoomIn', () => manager.activePreview?.zoomIn()),
     vscode.commands.registerCommand('wsqViewer.zoomOut', () => manager.activePreview?.zoomOut()),
     vscode.commands.registerCommand('wsqViewer.copyImage', () => manager.activePreview?.copyImage()),
@@ -65,7 +70,7 @@ export function activate(context: vscode.ExtensionContext): TestApi | undefined 
         return undefined;
       }
       try {
-        const img = await (await codec).decode(await vscode.workspace.fs.readFile(source));
+        const img = (await codec).decode(await vscode.workspace.fs.readFile(source), decodesFast(source));
         await vscode.workspace.fs.writeFile(dest, await encodePng(img.pixels, img.width, img.height, img.ppi));
       } catch (e) {
         void vscode.window.showErrorMessage(vscode.l10n.t('Could not export {0}: {1}', basename(source), e instanceof Error ? e.message : String(e)));
